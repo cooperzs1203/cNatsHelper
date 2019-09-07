@@ -3,7 +3,6 @@ package cNatsHelper
 import (
 	"fmt"
 	"github.com/nats-io/go-nats"
-	"log"
 	"strings"
 )
 
@@ -92,6 +91,17 @@ func (cMsg *CNatsMsg) NeedReply() bool {
 	return !(cMsg.Msg.Reply == "")
 }
 
+func (cMsg *CNatsMsg) GetReplyPrefix() string {
+	replyPrefix := ""
+	if cMsg == nil {
+		return replyPrefix
+	}
+
+	replyPrefix = strings.Join([]string{cMsg.GetServeName() , cMsg.GetServePID() , _REQUEST_REPLY_} , ".")
+
+	return replyPrefix
+}
+
 
 
 
@@ -113,8 +123,6 @@ func NormalCMsg(subject string, data []byte) CNatsMsg {
 			Sub: nil,
 		},
 	}
-
-	log.Printf("Normal cMsg : %+v" , cMsg)
 
 	return cMsg
 }
@@ -140,8 +148,6 @@ func RequestCMsg(subject string, data []byte) CNatsMsg {
 		},
 	}
 
-	log.Printf("Request cMsg : %+v" , cMsg)
-
 	return cMsg
 }
 
@@ -166,58 +172,13 @@ func ReplyCMsg(reqCMsg CNatsMsg , replyData []byte) CNatsMsg {
 	reply := reqCMsg.GetReply()
 
 	if reqCMsg.ServeInfo.Name != "" && reqCMsg.ServeInfo.PID != -1 {
-		replyProfix := strings.Join([]string{reqCMsg.GetServeName() , reqCMsg.GetServePID() , _REQUEST_REPLY_} , ".")
-		if strings.HasPrefix(reply, replyProfix) {
-			reply = strings.Replace(reply , replyProfix + "." , "" , 1)
+		if strings.HasPrefix(reply, reqCMsg.GetReplyPrefix()) {
+			reply = strings.Replace(reply , reqCMsg.GetReplyPrefix() , "" , 1)
 		}
 	}
 
 	cMsg.Msg.Subject = reply
 
-	log.Printf("Reply cMsg : %+v" , cMsg)
-
 	return cMsg
 }
 
-func buildSubject(subject string) string {
-	if subject == "" {
-		return ""
-	}
-
-	// use serveName.servePID to be the module part
-	if serveName != "" && servePID != -1 {
-		subject = strings.Join([]string{serveName , fmt.Sprintf("%d" , servePID) , subject} , ".")
-	}
-
-	log.Println("subject : " , subject)
-
-	return subject
-}
-
-func buildQueue(queue string) string {
-	if queue == "" {
-		return ""
-	}
-
-	// use serveName_servePID to be the profix part
-	if serveName != "" && servePID != -1 {
-		queue = strings.Join([]string{serveName , fmt.Sprintf("%d" , servePID) , queue} , "_")
-	}
-
-	log.Println("queue : " , queue)
-
-	return queue
-}
-
-func buildReply() string {
-	var reply string
-
-	// use serveName.servePID to be the profix part
-	if serveName != "" && servePID != -1 {
-		reply = strings.Join([]string{serveName , fmt.Sprintf("%d" , servePID) , _REQUEST_REPLY_} , ".")
-	}
-
-	log.Println("reply : " , reply)
-
-	return reply
-}

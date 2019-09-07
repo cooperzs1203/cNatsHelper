@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/nats-io/go-nats"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -118,7 +119,7 @@ func ListenAndServe(subject string, handler subHandler) error  {
 			panic("nats.Msg Unmarshal to CNatsMsg error : " + err.Error())
 		}
 
-		cMsg.Msg.Reply = cMsg.Msg.Reply + "." + msg.Reply
+		cMsg.Msg.Reply = strings.Join([]string{cMsg.Msg.Reply , msg.Reply} , ".")
 
 		handler(cMsg)
 	}
